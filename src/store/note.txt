@@ -1,0 +1,5 @@
+Rather than using redux which is heavy and complex we will use Zustand.
+
+Zustand is considered a simpler, more lightweight option, ideal for smaller projects with a focus on quick setup and ease of use.
+
+Redux is better suited for large, complex applications due to its robust features and strict data flow management; essentially, choose Zustand for fast development and simplicity, and Redux when you need more granular control and scalability in a large project. 
