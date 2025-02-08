@@ -1,58 +1,83 @@
 import { create } from "zustand";
-import api from "../lib/axios";
-import toast from "react-hot-toast";
+import api from "../util/api";
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   authUser: null,
-  isSigningUp: false,
-  isLoggingIn: false,
-  isSigningOut: false,
   isCheckingAuth: true,
 
-  signup: async (data) => {
-    set({ isSigningUp: true });
+  signup: async (name, username, email, password) => {
     try {
-      const res = await api.post("/auth/signup", data);
-      toast.success("Account Created Successfully!");
-      set({ authUser: res.data.user });
+      const res = await api.post("/auth/signup", {
+        name,
+        username,
+        email,
+        password,
+      });
+
+      if (res.data.success) {
+        const user = res.data.data;
+        set({ authUser: user, isCheckingAuth: false });
+        sessionStorage.setItem("authUser", JSON.stringify(user));
+      }
+
+      return { success: true };
     } catch (error) {
-      toast.error(error.response?.data?.message || "Something went wrong!");
-    } finally {
-      set({ isSigningUp: false });
+      return {
+        success: false,
+        message: error.response?.data?.message || "Signup failed",
+      };
     }
   },
 
-  // Direct login and store user data
-  login: async (credentials) => {
-    set({ isLoggingIn: true });
+  login: async (email, password) => {
     try {
-      const res = await api.post("/auth/login", credentials);
-      toast.success("User Logged In Successfully!");
-      set({ authUser: res.data.data });
+      const res = await api.post("/auth/login", { email, password });
 
-      localStorage.setItem("authToken", res.data.token); // Save token
+      const user = res.data.data;
+      set({ authUser: user, isCheckingAuth: false });
 
-      return res.data; // Return user data after successful login
+      // Save user info in sessionStorage (not the token, just user details)
+      sessionStorage.setItem("authUser", JSON.stringify(user));
+
+      return { success: true };
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Something went wrong!");
-      throw new Error(error?.response?.data?.message || "Login failed");
-    } finally {
-      set({ isLoggingIn: false });
+      return {
+        success: false,
+        message: error.response?.data?.message || "Login failed",
+      };
     }
   },
 
   logout: async () => {
-    set({ isSigningOut: true });
     try {
       await api.post("/auth/logout");
-      localStorage.removeItem("authToken"); // Remove token on logout
-      set({ authUser: null });
-      toast.success("User Logged out!");
+      set({ authUser: null, isCheckingAuth: false });
+      sessionStorage.removeItem("authUser");
     } catch (error) {
-      console.error("Error during Logout:", error.response?.data?.message);
-      toast.error(error.response?.data?.message || "Something went wrong!");
-    } finally {
-      set({ isSigningOut: false });
+      console.error("Logout failed:", error);
+    }
+  },
+
+  checkAuthStatus: async () => {
+    set({ isCheckingAuth: true });
+
+    try {
+      const res = await api.get("/auth/me");
+
+      if (res.data.success && res.data.data) {
+        const user = res.data.data;
+        sessionStorage.setItem("authUser", JSON.stringify(user));
+        set({ authUser: user, isCheckingAuth: false });
+      } else {
+        set({ authUser: null, isCheckingAuth: false });
+        sessionStorage.removeItem("authUser");
+      }
+    } catch (error) {
+      console.log("Auth check failed:", error);
+      set({ authUser: null, isCheckingAuth: false });
+      sessionStorage.removeItem("authUser");
     }
   },
 }));
+
+useAuthStore.getState().checkAuthStatus();

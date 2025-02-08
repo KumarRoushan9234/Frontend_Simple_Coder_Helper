@@ -2,7 +2,15 @@
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      translate: {
+        'full': '100%',
+        '-full': '-100%',
+      },
+    },
   },
-  plugins: [],
+  plugins: [
+    require('daisyui')
+  ],
 };
+

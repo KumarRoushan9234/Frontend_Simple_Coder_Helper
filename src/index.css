@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* General Background */
+/* .bg-primary {
+  background-color: #1A1A2E;
+}
+.bg-navbar {
+  background-color: #0F3460;
+}
+.bg-sidebar {
+  background-color: #16213E;
+}
+.bg-chatbox {
+  background-color: #0F3460;
+}
+.text-primary {
+  color: #EAEAEA;
+}
+.text-highlight {
+  color: #E94560;
+} */

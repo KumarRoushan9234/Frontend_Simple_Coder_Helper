@@ -1,55 +1,64 @@
 import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
-  Route,
   Routes,
-  useLocation,
+  Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
-import LoginPage from "./pages/auth/Login";
-import SignupPage from "./pages/auth/SignUp";
-import Home from "./pages/Home";
+import { useAuthStore } from "./store/useAuthStore";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
-import { useAuthStore } from "./store/useAuthStore";
+import Login from "./pages/Login";
+import Signup from "./pages/SignUp";
+import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
+import UpgradePage from "./pages/UpgradePage";
 
-function App() {
-  return (
-    <Router>
-      <RouteContent />
-    </Router>
-  );
-}
+const PrivateRoute = ({ children }) => {
+  const { authUser, isCheckingAuth } = useAuthStore();
 
-function RouteContent() {
+  if (isCheckingAuth) return null; // Wait until auth status is checked
+  return authUser ? children : <Navigate to="/login" replace />;
+};
+
+const AppContent = () => {
   const location = useLocation();
+  const { checkAuthStatus } = useAuthStore();
 
-  const excludeHeaderPaths = ["/login", "/signup"];
+  useEffect(() => {
+    checkAuthStatus(); // Check auth status on mount
+  }, []);
+
+  const excludeHeaderPaths = ["/login", "/signup", "/upgrade"];
   const showHeader = !excludeHeaderPaths.includes(location.pathname);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {showHeader && <Navbar />}
-      <main className="flex-grow">
-        <Routes>
-          <Route
-            path="/login"
-            element={<LoginPage />}
-            // element={!authUser ? <LoginPage /> : <Navigate to="/home" />}
-          />
-          <Route
-            path="/signup"
-            element={<SignupPage />}
-            // element={!authUser ? <SignupPage /> : <Navigate to="/" />}
-          />
-          <Route path="/" element={<Home />} />
-        </Routes>
-      </main>
-      {showHeader && <Footer />}
+    <div>
+      {/* {showHeader && <Navbar />} */}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/upgrade" element={<UpgradePage />} />
+      </Routes>
+      {/* {showHeader && <Footer />} */}
       <Toaster />
     </div>
   );
-}
+};
+
+const App = () => (
+  <Router>
+    <AppContent />
+  </Router>
+);
 
 export default App;
