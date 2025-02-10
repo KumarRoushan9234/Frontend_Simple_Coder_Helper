@@ -1,11 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useChatStore } from "../../store/useChatStore";
 import { CiUser } from "react-icons/ci";
 import ChatBox from "./ChatBox";
 
 const Chat = () => {
   const authUser = useAuthStore((state) => state.authUser);
-
+  const {
+    isSidebarOpen,
+    askQuestion,
+    isLoading,
+    response,
+    fetchConversation,
+    chatHistory,
+  } = useChatStore();
+  // console.log(chatHistory);
   const messages = [
     {
       sender: authUser?.name || "User",
@@ -23,6 +32,11 @@ const Chat = () => {
       status: "Delivered",
     },
   ];
+  // const message = [];
+  // useEffect = () => {
+  //   message = fetchConversation();
+  //   console.log(message);
+  // };
 
   return <ChatBox messages={messages} currentUser={authUser?.name || "User"} />;
 };

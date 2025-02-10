@@ -14,6 +14,7 @@ import Signup from "./pages/SignUp";
 import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
 import UpgradePage from "./pages/UpgradePage";
+import PreviousChat from "./components/ChatBox/PreviousChat";
 
 const PrivateRoute = ({ children }) => {
   const { authUser, isCheckingAuth } = useAuthStore();
@@ -35,7 +36,7 @@ const AppContent = () => {
 
   return (
     <div>
-      {/* {showHeader && <Navbar />} */}
+      {showHeader && <Navbar />}
       <Routes>
         <Route
           path="/"
@@ -45,9 +46,22 @@ const AppContent = () => {
             </PrivateRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/upgrade" element={<UpgradePage />} />
+        <Route
+          path="/previous"
+          element={
+            <PrivateRoute>
+              <PreviousChat />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <UpgradePage />
+            </PrivateRoute>
+          }
+        />
       </Routes>
       {/* {showHeader && <Footer />} */}
       <Toaster />

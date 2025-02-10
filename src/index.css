@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* General Background */
 /* .bg-primary {
   background-color: #1A1A2E;
