@@ -15,6 +15,7 @@ import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
 import UpgradePage from "./pages/UpgradePage";
 import PreviousChat from "./components/ChatBox/PreviousChat";
+import Profile from "./components/Profile/Profile";
 
 const PrivateRoute = ({ children }) => {
   const { authUser, isCheckingAuth } = useAuthStore();
@@ -55,10 +56,18 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/"
+          path="/upgrade"
           element={
             <PrivateRoute>
               <UpgradePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
             </PrivateRoute>
           }
         />
