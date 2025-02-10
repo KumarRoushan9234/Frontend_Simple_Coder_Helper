@@ -3,10 +3,11 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useChatStore } from "../../store/useChatStore";
 import { FaSearch } from "react-icons/fa";
 import toast from "react-hot-toast";
+import moment from "moment";
 
-const MessageBubble = ({ text, sender }) => (
+const MessageBubble = ({ text, sender, timestamp, isLast }) => (
   <div
-    className={`group p-3 rounded-md relative cursor-pointer select-text
+    className={`group p-3 rounded-md relative cursor-pointer select-text 
       ${
         sender === "user"
           ? "bg-[#1E40AF] self-end text-white w-3/4 ml-auto"
@@ -17,7 +18,17 @@ const MessageBubble = ({ text, sender }) => (
   >
     <div>{text}</div>
 
-    {/* Copy Button */}
+    {sender === "bot" && (
+      <>
+        <div className="flex justify-end">
+          <div className="text-xs text-gray-400 border border-gray-600 px-2 py-1 rounded-md">
+            {moment(timestamp).format("hh:mm A | DD-MM-YYYY")}
+          </div>
+        </div>
+        {!isLast && <div className="border-b border-gray-600 my-2"></div>}
+      </>
+    )}
+
     <button
       className="absolute top-2 right-2 hidden group-hover:block text-xs bg-gray-900 text-white px-2 py-1 rounded"
       onClick={() => {
@@ -37,6 +48,8 @@ const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [disableInput, setDisableInput] = useState(false);
+  const [typingText, setTypingText] = useState(""); // Typing effect state
+
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -51,13 +64,33 @@ const ChatInterface = () => {
     loadMessages();
   }, []);
 
+  useEffect(() => {
+    // Auto-scroll to the bottom when messages update
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      let dots = 0;
+      const typingInterval = setInterval(() => {
+        setTypingText(
+          `Hello ${
+            authUser?.name || "Guest"
+          }! What can I help you with${".".repeat(dots)} `
+        );
+        dots = (dots + 1) % 4;
+      }, 500); // Change dots every 500ms
+
+      return () => clearInterval(typingInterval);
+    }
+  }, [messages, authUser]);
+
   const handleInputChange = (e) => {
     setInput(e.target.value);
 
-    // Dynamically adjust height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"; // Reset height
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 160); // Max height 160px
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 160);
       textareaRef.current.style.height = `${newHeight}px`;
     }
   };
@@ -70,6 +103,9 @@ const ChatInterface = () => {
     setInput("");
     setDisableInput(true);
 
+    // Reset textarea height
+    if (textareaRef.current) textareaRef.current.style.height = "80px";
+
     try {
       const responseText = await askQuestion(input);
 
@@ -79,10 +115,9 @@ const ChatInterface = () => {
         return;
       }
 
-      // Streaming response in chunks
       let index = 0;
       const chunkSize = 5;
-      const botMessage = { sender: "bot", text: "" };
+      const botMessage = { sender: "bot", text: "", timestamp: new Date() };
       setMessages((prev) => [...prev, botMessage]);
 
       const interval = setInterval(() => {
@@ -96,7 +131,6 @@ const ChatInterface = () => {
             return updatedMessages;
           });
 
-          // Ensure auto-scrolling while streaming
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 10);
@@ -113,11 +147,6 @@ const ChatInterface = () => {
     }
   }, [input, askQuestion]);
 
-  // Auto scroll to bottom when new message is added
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   return (
     <div
       className={`relative flex flex-col items-center w-full max-w-5xl min-h-screen from-[#0c1023] to-[#181f33] text-white ${
@@ -125,19 +154,29 @@ const ChatInterface = () => {
       }`}
       style={{ paddingTop: "60px" }}
     >
-      {/* Messages Container */}
+      {/* Messages Container (No Scrollbar) */}
       <div
         ref={messagesContainerRef}
-        className="flex flex-col w-full max-w-3xl px-4 py-4 space-y-4 mb-40 overflow-hidden"
-        style={{ maxHeight: "calc(100vh - 160px)" }}
+        className="flex flex-col w-full max-w-3xl px-4 py-4 space-y-4 mb-40 overflow-auto flex-grow items-center justify-center"
+        style={{
+          maxHeight: "calc(100vh - 160px)",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
       >
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-lg text-gray-300">
-            {`Hello ${authUser?.name || "Guest"}! What can I help you with?`}
+          <div className="text-lg text-gray-300 text-center font-medium">
+            {typingText}
           </div>
         ) : (
           messages.map((msg, index) => (
-            <MessageBubble key={index} text={msg.text} sender={msg.sender} />
+            <MessageBubble
+              key={index}
+              text={msg.text}
+              sender={msg.sender}
+              timestamp={msg.timestamp}
+              isLast={index === messages.length - 1}
+            />
           ))
         )}
 
@@ -147,7 +186,6 @@ const ChatInterface = () => {
 
       {/* Fixed Input Box */}
       <div className="fixed bottom-0 left-0 right-0 w-full shadow-lg z-50 flex flex-col items-center p-4 rounded-t-lg">
-        {/* Input & Buttons */}
         <div className="w-full max-w-3xl flex items-center bg-[#1E293B] rounded-lg p-4 shadow-md">
           <textarea
             ref={textareaRef}
@@ -158,29 +196,19 @@ const ChatInterface = () => {
               e.key === "Enter" && !e.shiftKey && handleSendMessage()
             }
             disabled={disableInput}
-            className="w-full bg-transparent border-none outline-none text-lg text-white rounded-md resize-none overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-transparent border-none outline-none text-lg text-white rounded-md resize-none overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               minHeight: "80px",
-              maxHeight: "160px",
+              maxHeight: "120px",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
           />
-          {/* Hide scrollbar for Chrome, Safari, Edge */}
-          <style>
-            {`
-              textarea::-webkit-scrollbar {
-                display: none;
-              }
-            `}
-          </style>
           <FaSearch
             className="text-white size-6 cursor-pointer"
             onClick={handleSendMessage}
           />
         </div>
-
-        {/* Disclaimer */}
         <p className="text-gray-400 text-sm mt-2 text-center w-full max-w-3xl pb-2">
           LLM models can make mistakes. Recheck important info.
         </p>
@@ -190,10 +218,3 @@ const ChatInterface = () => {
 };
 
 export default ChatInterface;
-
-// Customizable Parameters
-// Parameter	Purpose	Suggested Value
-// chunkSize	Number of characters to show per update	10 (for smoother flow)
-// interval time	Speed of chunk updates	30ms (for fast streaming)
-// 🔹 Want even bigger chunks? Set chunkSize = 20 for faster responses.
-// 🔹 Want instant response? Set interval time = 10ms.

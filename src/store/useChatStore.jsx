@@ -6,7 +6,7 @@ export const useChatStore = create((set, get) => ({
   isSidebarOpen: false,
   selectedModel: null,
   chatHistory: [],
-  messages: [], // Ensure this is initialized
+  messages: [],
   userInput: "",
   response: "",
   isLoading: false,
