@@ -71,6 +71,7 @@ const AppContent = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/login" element={<Login />}></Route>
       </Routes>
       {/* {showHeader && <Footer />} */}
       <Toaster />

@@ -1,7 +1,52 @@
 import React, { useEffect } from "react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import moment from "moment"; // Import moment for date-time formatting
+import moment from "moment";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+const MessageBubble = ({ text, sender, timestamp }) => (
+  <div
+    className={`group p-4 rounded-md relative cursor-pointer select-text text-sm leading-relaxed
+      ${
+        sender === "user"
+          ? "bg-[#1E40AF] text-white self-end w-3/4 ml-auto"
+          : "bg-gray-700 text-white self-start w-full"
+      }
+    `}
+    style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+  >
+    <ReactMarkdown
+      components={{
+        code({ node, inline, className, children, ...props }) {
+          return inline ? (
+            <code className="bg-gray-800 px-1 py-0.5 rounded-md">
+              {children}
+            </code>
+          ) : (
+            <SyntaxHighlighter
+              style={dracula}
+              language="javascript"
+              PreTag="div"
+              className="p-2 rounded-md"
+            >
+              {String(children).replace(/\n$/, "")}
+            </SyntaxHighlighter>
+          );
+        },
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+
+    <div className="flex justify-end">
+      <div className="text-xs text-gray-400 border border-gray-600 px-2 py-1 rounded-md">
+        {moment(timestamp).format("hh:mm A | DD-MM-YYYY")}
+      </div>
+    </div>
+  </div>
+);
 
 const PreviousChat = () => {
   const { chatHistory, fetchConversation } = useChatStore();
@@ -13,37 +58,26 @@ const PreviousChat = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-[#161e26]">
-      <h2 className="text-center text-lg font-bold bg-[#1f2c39] py-3 rounded-md">
-        Previous Chats
-      </h2>
       <div className="p-6 mt-16 mb-9 bg-[#1f2c39] w-full max-w-5xl text-white rounded-lg border shadow-lg">
-        {/* Separate Chat History Section */}
+        <h2 className="text-center text-lg font-bold bg-[#1f2c39] py-3 rounded-md">
+          Previous Chats
+        </h2>
+
         {chatHistory.length > 0 ? (
           <div className="mt-6 space-y-6 border-t border-gray-500 pt-4">
             {chatHistory.map((msg, index) => (
               <div key={index} className="flex flex-col space-y-3">
-                {/* User Message (Right-Aligned, 3/4 Width) */}
-                <div className="flex justify-end">
-                  <div className="bg-blue-600 text-white p-3 rounded-lg border border-blue-400 w-3/4 shadow-md">
-                    <p className="font-semibold">{authUser?.name || "User"}:</p>
-                    <p>{msg.user}</p>
-                  </div>
-                </div>
+                <MessageBubble
+                  text={msg.user}
+                  sender="user"
+                  timestamp={msg.timestamp}
+                />
+                <MessageBubble
+                  text={msg.assistant}
+                  sender="bot"
+                  timestamp={msg.timestamp}
+                />
 
-                {/* AI Message (Full Width) */}
-                <div className="bg-green-700 text-white p-3 rounded-lg border border-green-500 w-full shadow-md">
-                  <p className="font-semibold">AI:</p>
-                  <p>{msg.assistant}</p>
-                </div>
-
-                {/* Timestamp (Bottom Right) */}
-                <div className="flex justify-end">
-                  <div className="text-xs text-gray-400 border border-gray-600 px-2 py-1 rounded-md">
-                    {moment(msg.timestamp).format("hh:mm A | DD-MM-YYYY")}
-                  </div>
-                </div>
-
-                {/* Divider for separation */}
                 {index !== chatHistory.length - 1 && (
                   <div className="border-b border-gray-600 my-2"></div>
                 )}
